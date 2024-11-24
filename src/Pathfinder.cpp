@@ -37,9 +37,14 @@ void PathFinder::Setup() {
 
     if (world->get_goals().size() == 0) {
         goal_paths.push_back({current_position, world->get_destination()});
-    } else if (world->get_goals().size() == 1) {
-        goal_paths.push_back({current_position, world->get_goals()[0], world->get_destination()});
     } else {
+        std::vector<Position> goal_path_final = {current_position};
+        goal_path_final.insert(goal_path_final.end(), goal_path.begin(), goal_path.end());
+        goal_path_final.push_back(world->get_destination());
+        goal_paths.push_back(goal_path_final);
+    }
+
+    if (world->get_goals().size() > 0) {
         // Build Goal Paths Using QuickPerm (quickperm.org)
         std::vector<unsigned int> p(world->get_goals().size() + 1);
         unsigned int i, j;
@@ -70,6 +75,8 @@ void PathFinder::Setup() {
     for (int i = 0; i < goal_paths.size(); i++) {
         previous.push_back({});
         lowest_cost.push_back({});
+        progress.push_back({});
+        goal_progress.push_back(0);
 
         lowest_cost[i][world->get_position_hashable(current_position)] = 0;
 
@@ -103,6 +110,10 @@ std::deque<std::pair<int, int>> PathFinder::get_current_path() {
            previous[current_goal_path].end()) {
         current_path.push_back(previous[current_goal_path][world->get_position_hashable(current_path.back())]);
     }
+
+    if (progress[current_goal_path].size() > 0)
+        current_path.insert(current_path.end(), ++progress[current_goal_path].begin(),
+                            progress[current_goal_path].end());
 
     return current_path;
 }
@@ -149,6 +160,27 @@ void PathFinder::Step() {
 
     open_set.pop();
 
+    if (current_position == goal_paths[goal_path][goal_progress[goal_path]]) {
+        auto current_path = get_current_path();
+
+        std::priority_queue<HeapTuple, std::vector<HeapTuple>, std::greater<HeapTuple>> new_open_set = {};
+        while (!open_set.empty()) {
+            if (std::get<1>(open_set.top()) != goal_path)
+                new_open_set.push(open_set.top());
+
+            open_set.pop();
+        }
+
+        open_set = new_open_set;
+
+        lowest_cost[goal_path].clear();
+        previous[goal_path].clear();
+        lowest_cost[goal_path][world->get_position_hashable(current_position)] = current_cost;
+
+        progress[goal_path] = std::vector<Position>(current_path.begin(), current_path.end());
+        goal_progress[goal_path]++;
+    }
+
     std::vector<Position> neighbors = {
         {current_position.first + 1, current_position.second},
         {current_position.first - 1, current_position.second},
@@ -168,8 +200,7 @@ void PathFinder::Step() {
 
         auto new_path = get_current_path();
         new_path.insert(new_path.begin(), neighbor);
-        float new_weight =
-            lowest_cost[goal_path][world->get_position_hashable(current_position)] + world->get_weight(neighbor);
+        float new_weight = current_cost + world->get_weight(neighbor);
         float new_heuristic = Heuristic(world, new_path, goal_paths[goal_path]);
 
         // This finds the optimal path WITH NO REPETITION, will need to work some more (or maybe add switch) the

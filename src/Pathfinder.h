@@ -28,6 +28,8 @@ class PathFinder {
 
     std::vector<std::unordered_map<PositionHashable, Position>> previous;
     std::vector<std::unordered_map<PositionHashable, float>> lowest_cost;
+    std::vector<std::vector<Position>> progress;
+    std::vector<int> goal_progress;
     std::vector<std::vector<Position>> goal_paths;
 
   public:

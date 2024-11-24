@@ -15,6 +15,8 @@
 int main(void) {
     World world = World({10, 10}, {5, 0}, {5, 9});
     world.add_goal({0, 0});
+    world.add_goal({0, 2});
+    world.add_goal({0, 9});
     PathFinder pathfinder = PathFinder(&world, AStar::Heuristic);
 
     while (!pathfinder.completed() && !pathfinder.failed()) {
