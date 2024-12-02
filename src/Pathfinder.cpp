@@ -48,7 +48,6 @@ void PathFinder::Setup() {
         // Build Goal Paths Using QuickPerm (quickperm.org)
         std::vector<unsigned int> p(world->get_goals().size() + 1);
         unsigned int i, j;
-        Position tmp;
         for (i = 0; i < world->get_goals().size(); i++) {
             p[i] = i;
         }
@@ -72,7 +71,7 @@ void PathFinder::Setup() {
         }
     }
 
-    for (int i = 0; i < goal_paths.size(); i++) {
+    for (size_t i = 0; i < goal_paths.size(); i++) {
         previous.push_back({});
         lowest_cost.push_back({});
         progress.push_back({});
@@ -128,7 +127,7 @@ bool PathFinder::completed() {
 
     auto path = get_current_path();
 
-    int i = 0;
+    size_t i = 0;
     for (auto pos = path.rbegin(); pos != path.rend(); pos++) {
         if (i < goal_paths[current_goal_path].size() && *pos == goal_paths[current_goal_path][i])
             i++;
