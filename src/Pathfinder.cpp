@@ -118,6 +118,10 @@ std::deque<std::pair<int, int>> PathFinder::get_current_path() {
     return current_path;
 }
 
+std::vector<Position> PathFinder::get_current_goal_path() {
+    return goal_paths[current_goal_path];
+}
+
 bool PathFinder::completed() {
     if (current_position != world->get_destination())
         return false;
