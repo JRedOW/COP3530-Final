@@ -52,6 +52,9 @@ class PathFinder {
     int checks(Position pos);
 
     void Step();
+
+  void Reset(World* newWorld, HeuristicFnDef heuristicFn);
+
 };
 
 namespace Dijkstra {
@@ -61,3 +64,7 @@ float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<
 namespace AStar {
 float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
 }
+
+
+
+

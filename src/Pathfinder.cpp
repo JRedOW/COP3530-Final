@@ -21,7 +21,7 @@ PathFinder::PathFinder(World* world, HeuristicFnDef heuristic_fn) {
     this->world = world;
     this->Heuristic = heuristic_fn;
 
-    world->locked = true;
+   // world->locked = true;
 
     Setup();
 }
@@ -48,6 +48,7 @@ void PathFinder::Setup() {
         // Build Goal Paths Using QuickPerm (quickperm.org)
         std::vector<unsigned int> p(world->get_goals().size() + 1);
         unsigned int i, j;
+        Position tmp;
         for (i = 0; i < world->get_goals().size(); i++) {
             p[i] = i;
         }
@@ -71,7 +72,7 @@ void PathFinder::Setup() {
         }
     }
 
-    for (size_t i = 0; i < goal_paths.size(); i++) {
+    for (int i = 0; i < goal_paths.size(); i++) {
         previous.push_back({});
         lowest_cost.push_back({});
         progress.push_back({});
@@ -117,17 +118,13 @@ std::deque<std::pair<int, int>> PathFinder::get_current_path() {
     return current_path;
 }
 
-std::vector<Position> PathFinder::get_current_goal_path() {
-    return goal_paths[current_goal_path];
-}
-
 bool PathFinder::completed() {
     if (current_position != world->get_destination())
         return false;
 
     auto path = get_current_path();
 
-    size_t i = 0;
+    int i = 0;
     for (auto pos = path.rbegin(); pos != path.rend(); pos++) {
         if (i < goal_paths[current_goal_path].size() && *pos == goal_paths[current_goal_path][i])
             i++;
@@ -219,7 +216,7 @@ void PathFinder::Step() {
 }
 
 float Dijkstra::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path) {
-    return 0;
+    return 0.0f;
 }
 
 float AStar::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path) {
@@ -245,3 +242,7 @@ float AStar::Heuristic(World* world, std::deque<Position> incomplete_path, std::
 
     return distance_needed;
 }
+
+
+
+
