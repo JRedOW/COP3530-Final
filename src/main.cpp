@@ -18,6 +18,9 @@ const Color DESTINATION_COLOR = PURPLE;
 const Color CURRENT_PATH_COLOR = Fade(RED, 0.5f);
 const Color OPTIMAL_PATH_COLOR = Fade(BLACK, 0.5f);
 
+const int LINE_SEPERATION = 3;
+const Color PATHFINDER_COLOR = ORANGE;
+
 std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder, int selectedAlgorithm,
                                            PathfinderHeuristicFn algorithmFns[]) {
     World* new_world = new World({30, 15}, {0, 0}, {19, 14}); // Create a new World object
@@ -37,8 +40,10 @@ std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder,
     PathFinder* new_pathfinder = new PathFinder(new_world, algorithmFns[selectedAlgorithm]);
 
     // Free old objects
-    delete pathfinder;
-    delete world;
+    if (pathfinder != nullptr)
+        delete pathfinder;
+    if (world != nullptr)
+        delete world;
 
     return std::make_tuple(new_world, new_pathfinder);
 }
@@ -144,6 +149,10 @@ int main() {
                     tileColor = GRASS_COLOR; // Default
 
                 DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, tileColor);
+
+                float checks = (float)pathfinder->checks(pos);
+                if (checks > 0)
+                    DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, Fade(RED, checks / (checks + 5)));
             }
         }
 
@@ -157,30 +166,54 @@ int main() {
                       TILE_SIZE, TILE_SIZE, DESTINATION_COLOR);
 
         // Draw optimal path
-        for (auto pos : pathfinder->get_current_path()) {
-            DrawRectangle(pos.first * TILE_SIZE, pos.second * TILE_SIZE, TILE_SIZE, TILE_SIZE, CURRENT_PATH_COLOR);
-        }
-        /*
-        size_t path_i = 0;
+        int loopbacks = 1;
         auto path = pathfinder->get_current_path();
+        size_t path_i = path.size() - 1;
         Position last_turn = Position(-1, -1);
-        while (path_i < path.size()) {
+        int traveled = 0;
+        while (path_i >= 0) {
             if (last_turn.first == -1)
                 last_turn = path[path_i];
 
-            if (path[path_i].first != last_turn.first && path[path_i].second != last_turn.second) {
-                DrawLine(path[path_i - 1].first * TILE_SIZE + TILE_SIZE / 2,
-                         path[path_i - 1].second * TILE_SIZE + TILE_SIZE / 2,
-                         last_turn.first * TILE_SIZE + TILE_SIZE / 2, last_turn.second * TILE_SIZE + TILE_SIZE / 2,
-                         PURPLE);
-                last_turn = path[path_i - 1];
+            if ((path[path_i].first != last_turn.first && path[path_i].second != last_turn.second)) {
+                int side = loopbacks % 2 == 0 ? 1 : -1;
+                DrawLine(
+                    path[path_i + 1].first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    path[path_i + 1].second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    last_turn.first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    last_turn.second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    PATHFINDER_COLOR);
+                last_turn = path[path_i + 1];
+                traveled = 0;
             }
 
-            path_i++;
+            if (traveled > distance(last_turn, path[path_i])) {
+                int side = loopbacks % 2 == 0 ? 1 : -1;
+                DrawLine(
+                    path[path_i + 1].first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    path[path_i + 1].second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    last_turn.first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    last_turn.second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                    PATHFINDER_COLOR);
+
+                last_turn = path[path_i + 1];
+
+                loopbacks++;
+            }
+
+            traveled = distance(last_turn, path[path_i]);
+
+            if (path_i == 0)
+                break;
+
+            path_i--;
         }
-        DrawLine(path[path_i].first * TILE_SIZE + TILE_SIZE / 2, path[path_i].second * TILE_SIZE + TILE_SIZE / 2,
-                 last_turn.first * TILE_SIZE + TILE_SIZE / 2, last_turn.second * TILE_SIZE + TILE_SIZE / 2, PURPLE);
-        */
+        int side = loopbacks % 2 == 0 ? 1 : -1;
+        DrawLine(path[path_i].first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                 path[path_i].second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                 last_turn.first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                 last_turn.second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
+                 PATHFINDER_COLOR);
 
         size_t goal_path_i = 0;
         auto goal_path = pathfinder->get_current_goal_path();

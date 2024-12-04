@@ -287,5 +287,8 @@ float DijkstraFolly::Heuristic(World* world, std::deque<Position> incomplete_pat
     if (i == goal_path.size())
         return 0;
 
-    return distance(current_position, goal_path[i]);
+    if (i > 0 && incomplete_path.front() == goal_path[i - 1])
+        return 0;
+
+    return (float)distance(current_position, goal_path[i]);
 }
