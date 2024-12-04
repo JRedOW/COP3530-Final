@@ -44,8 +44,8 @@ int main() {
                                             DijkstraFolly::Heuristic};
     const int algorithmCount = sizeof(algorithms) / sizeof(*algorithms);
     int selectedAlgorithm = 0; // 0 = A*, 1 = Dijkstra, 2 = Dijkstra's Crow, 3 = Dijkstra's Folly
-    const char* maps[] = {"It's Dangerous To Go Alone!"};
-    const char* mapFiles[] = {ASSETS_PATH "worlds/its_dangerous.dat"};
+    const char* maps[] = {"It's Dangerous To Go Alone!", "Big Boy"};
+    const char* mapFiles[] = {ASSETS_PATH "worlds/its_dangerous.dat", ASSETS_PATH "worlds/big_ol_world.dat"};
     const int mapCount = sizeof(maps) / sizeof(*maps);
     int selectedMap = 0;
     const char* speeds[] = {"Slow", "Fast", "Faster", "Fastest", "Ludicrous"};
@@ -186,6 +186,9 @@ int main() {
                 } else if (weight == 1200.0f) { // Zelda Rock
                     tileColor = BLACK;
                     tileTexture = tileSize == 16 ? zRock16Texture : zRock32Texture;
+                } else if (weight == 1221.0f) { // Black Wall
+                    tileColor = BLACK;
+                    tileTexture = tileSize == 16 ? black16Texture : black32Texture;
                 } else if (weight == 1532.0f) { // Zelda Flame
                     tileColor = BLACK;
                     tileTexture = tileSize == 16 ? flame16Texture : flame32Texture;
@@ -199,15 +202,15 @@ int main() {
 
                 if (tileSize >= 16) {
                     DrawTexture(tileTexture, x * tileSize + mapOffsetX, y * tileSize + mapOffsetY, WHITE);
-
-                    // Draw check count
-                    float checks = (float)pathfinder->checks(pos);
-                    if (checks > 0)
-                        DrawRectangle(x * tileSize + mapOffsetX, y * tileSize + mapOffsetY, tileSize, tileSize,
-                                      Fade(RED, checks / (checks + 5)));
                 } else {
-                    DrawRectangle(x * tileSize, y * tileSize, tileSize, tileSize, tileColor);
+                    DrawRectangle(x * tileSize + mapOffsetX, y * tileSize + mapOffsetY, tileSize, tileSize, tileColor);
                 }
+
+                // Draw check count
+                float checks = (float)pathfinder->checks(pos);
+                if (checks > 0)
+                    DrawRectangle(x * tileSize + mapOffsetX, y * tileSize + mapOffsetY, tileSize, tileSize,
+                                  Fade(RED, checks / (checks + 5)));
             }
         }
 

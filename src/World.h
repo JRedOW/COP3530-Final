@@ -52,3 +52,5 @@ class World {
     PositionHashable get_position_hashable(Position pos);
     Position get_position(PositionHashable hash);
 };
+
+// World* BIG_OL_WORLD();

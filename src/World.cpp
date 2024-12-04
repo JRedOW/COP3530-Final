@@ -204,3 +204,36 @@ PositionHashable World::get_position_hashable(Position pos) {
 Position World::get_position(PositionHashable hash) {
     return {hash / size.second, hash % size.second};
 }
+
+/*
+World* BIG_OL_WORLD() {
+    // Get Data From Here: https://keesiemeijer.github.io/maze-generator/#generate
+    // With This In Console:
+    //
+    // let out = "";
+    // for (let i = 1; i < mazeNodes.matrix.length; i++) {
+    //     out += "\""
+    //     out += mazeNodes.matrix[i].slice(1);
+    //     out += "\","
+    // }
+
+    char* data[] = {""};
+
+    std::pair<int, int> size = {400, 250};
+
+    World* world = new World(size, {0, 0}, {size.first - 1, size.second - 2});
+
+    for (int x = 0; x < size.first; x++) {
+        for (int y = 0; y < size.second; y++) {
+            char c = data[y][x];
+            if (c == '0') {
+                world->set_weight({x, y}, 1.0f);
+            } else {
+                world->set_weight({x, y}, 1221.0f);
+            }
+        }
+    }
+
+    return world;
+}
+*/
