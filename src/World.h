@@ -1,8 +1,9 @@
 #pragma once
 
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
+
 
 typedef std::pair<int, int> Position;
 typedef int PositionHashable;
@@ -22,8 +23,6 @@ class World {
 
   public:
     World(std::pair<int, int> size, Position spawn, Position destination);
-
-
 
     /// @brief DO NOT MODIFY UNLESS YOU KNOW WHAT YOUR DOING
     bool locked = false;
@@ -48,6 +47,4 @@ class World {
 
     PositionHashable get_position_hashable(Position pos);
     Position get_position(PositionHashable hash);
-
-
 };

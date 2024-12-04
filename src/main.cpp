@@ -3,26 +3,16 @@
 #include "raylib.h"
 #include <iostream>
 
-using namespace std;
-
-const int TILE_SIZE = 32;
-
-const Color GRASS_COLOR = GREEN;
-const Color PATH_COLOR = DARKGRAY;
-const Color BRIDGE_COLOR = BEIGE;
-const Color RIVER_COLOR = BLUE;
-const Color TREE_COLOR = BROWN;
-const Color SPAWN_COLOR = RED;
-const Color GOAL_COLOR = GOLD;
-const Color DESTINATION_COLOR = PURPLE;
-const Color CURRENT_PATH_COLOR = Fade(RED, 0.5f);
-const Color OPTIMAL_PATH_COLOR = Fade(BLACK, 0.5f);
+#ifndef ASSETS_PATH
+#define ASSETS_PATH "./assets"
+#endif
 
 const int LINE_SEPERATION = 3;
 const Color PATHFINDER_COLOR = ORANGE;
+const Color PATHFINDER_MINI_COLOR = Fade(ORANGE, 0.5f);
 
-std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder, int selectedAlgorithm,
-                                           PathfinderHeuristicFn algorithmFns[]) {
+std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder,
+                                           PathfinderHeuristicFn selectedAlgorithm) {
     World* new_world = new World({30, 15}, {0, 0}, {19, 14}); // Create a new World object
 
     // Reapply weights and goals
@@ -37,7 +27,7 @@ std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder,
     new_world->add_goal({1, 6});
 
     // Reinitialize PathFinder
-    PathFinder* new_pathfinder = new PathFinder(new_world, algorithmFns[selectedAlgorithm]);
+    PathFinder* new_pathfinder = new PathFinder(new_world, selectedAlgorithm);
 
     // Free old objects
     if (pathfinder != nullptr)
@@ -50,8 +40,24 @@ std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder,
 
 int main() {
     // Initialize Raylib
-    InitWindow(800, 600, "The Legend of Alberta");
+    InitWindow(1600, 900, "The Legend of Alberta");
     SetTargetFPS(60);
+
+    // Initialize textures
+    Texture2D path16Texture = LoadTexture(ASSETS_PATH "tiles/16/sand.png");
+    Texture2D path32Texture = LoadTexture(ASSETS_PATH "tiles/32/sand.png");
+    Texture2D bridge16Texture = LoadTexture(ASSETS_PATH "tiles/16/bridge.png");
+    Texture2D bridge32Texture = LoadTexture(ASSETS_PATH "tiles/32/bridge.png");
+    Texture2D grass16Texture = LoadTexture(ASSETS_PATH "tiles/16/grass.png");
+    Texture2D grass32Texture = LoadTexture(ASSETS_PATH "tiles/32/grass.png");
+    Texture2D river16Texture = LoadTexture(ASSETS_PATH "tiles/16/river.png");
+    Texture2D river32Texture = LoadTexture(ASSETS_PATH "tiles/32/river.png");
+    Texture2D tree16Texture = LoadTexture(ASSETS_PATH "tiles/16/tree.png");
+    Texture2D tree32Texture = LoadTexture(ASSETS_PATH "tiles/32/tree.png");
+    Texture2D coin16Texture = LoadTexture(ASSETS_PATH "tiles/16/coin.png");
+    Texture2D coin32Texture = LoadTexture(ASSETS_PATH "tiles/32/coin.png");
+    Texture2D black16Texture = LoadTexture(ASSETS_PATH "tiles/16/black.png");
+    Texture2D black32Texture = LoadTexture(ASSETS_PATH "tiles/32/black.png");
 
     // Create World and PathFinder objects
     World* world = new World({30, 15}, {0, 0}, {19, 14});
@@ -71,22 +77,29 @@ int main() {
     const char* algorithms[] = {"A*", "Dijkstra", "Dijkstra's Crow", "Dijkstra's Folly"};
     PathfinderHeuristicFn algorithmFns[] = {AStar::Heuristic, Dijkstra::Heuristic, DijkstraCrow::Heuristic,
                                             DijkstraFolly::Heuristic};
-    auto algorithmCount = sizeof(algorithms) / sizeof(*algorithms);
+    const int algorithmCount = sizeof(algorithms) / sizeof(*algorithms);
     int selectedAlgorithm = 0; // 0 = A*, 1 = Dijkstra, 2 = Dijkstra's Crow, 3 = Dijkstra's Folly
+    const char* speeds[] = {"Slow", "Fast", "Fastest", "Ludicrous"};
+    const int stallFrames[] = {5, 2, 1, 0};
+    const int speedCount = sizeof(speeds) / sizeof(*speeds);
+    int selectedSpeed = 0;
+
     bool dropdownActive = true;
-    Rectangle dropdownRect = {400, 575, 150, 30};
-    Rectangle restartButton = {600, 560, 150, 30};
-    Rectangle startButton = {600, 500, 150, 30};
+    Rectangle dropdownRect = {800, 760, 150, 30};
+    Rectangle mapRect = {800, 810, 150, 30};
+    Rectangle speedRect = {800, 860, 150, 30};
+    Rectangle startButton = {1400, 760, 150, 30};
+    Rectangle stepButton = {1400, 810, 150, 30};
+    Rectangle restartButton = {1400, 860, 150, 30};
 
     bool runningPathfinder = false;
-    int stallFrames = 1;
     int currentFrame = 0;
 
     while (!WindowShouldClose()) {
         // Run Pathfinder Step
         if (runningPathfinder) {
             if (!pathfinder->completed() && !pathfinder->failed()) {
-                if (currentFrame % (stallFrames + 1) == 0) {
+                if (currentFrame % (stallFrames[selectedSpeed] + 1) == 0) {
                     pathfinder->Step();
                 }
             } else {
@@ -102,10 +115,14 @@ int main() {
                 runningPathfinder = false;
 
                 selectedAlgorithm = ++selectedAlgorithm % algorithmCount; // Choose algorithm
-                cout << selectedAlgorithm << endl;
+                std::cout << selectedAlgorithm << std::endl;
 
                 delete pathfinder;
                 pathfinder = new PathFinder(world, algorithmFns[selectedAlgorithm]);
+            }
+
+            if (CheckCollisionPointRec(mousePos, speedRect)) {
+                selectedSpeed = ++selectedSpeed % speedCount; // Choose speed
             }
 
             // Handle start button
@@ -114,13 +131,39 @@ int main() {
                 runningPathfinder = !runningPathfinder;
             }
 
+            // Handle step button
+            if (CheckCollisionPointRec(mousePos, stepButton)) {
+                // Step pathfinder
+                if (!runningPathfinder) {
+                    pathfinder->Step();
+                }
+            }
+
             // Handle restart button
             if (CheckCollisionPointRec(mousePos, restartButton)) {
                 runningPathfinder = false;
 
-                std::tie(world, pathfinder) = ResetWorld(world, pathfinder, selectedAlgorithm, algorithmFns);
+                std::tie(world, pathfinder) = ResetWorld(world, pathfinder, algorithmFns[selectedAlgorithm]);
             }
         }
+
+        // Calculate map size
+        int tileSize = 32;
+        int mapWidth = world->get_size().first * tileSize;
+        int mapHeight = world->get_size().second * tileSize;
+        if (mapWidth >= 1600 || mapHeight >= 750) {
+            tileSize = 16;
+            mapWidth = world->get_size().first * tileSize;
+            mapHeight = world->get_size().second * tileSize;
+
+            if (mapWidth >= 1600 || mapHeight >= 750) {
+                tileSize = std::min(1600 / world->get_size().first, 750 / world->get_size().second);
+                mapWidth = world->get_size().first * tileSize;
+                mapHeight = world->get_size().second * tileSize;
+            }
+        }
+        int mapOffsetX = (1600 - mapWidth) / 2;
+        int mapOffsetY = (750 - mapHeight) / 2;
 
         /****    RENDERING    ****/
 
@@ -133,87 +176,125 @@ int main() {
                 Position pos = {x, y};
                 float weight = world->get_weight(pos);
                 Color tileColor;
+                Texture2D tileTexture;
 
                 // Select tile color based on weight
-                if (weight == 1.0f)
-                    tileColor = PATH_COLOR;
-                else if (weight == 1.5f)
-                    tileColor = BRIDGE_COLOR;
-                else if (weight == 2.0f)
-                    tileColor = GRASS_COLOR;
-                else if (weight == 10.0f)
-                    tileColor = RIVER_COLOR;
-                else if (weight >= 1001.0f)
-                    tileColor = TREE_COLOR;
-                else
-                    tileColor = GRASS_COLOR; // Default
+                if (weight == 1.0f) { // Path
+                    tileColor = DARKGRAY;
+                    tileTexture = tileSize == 16 ? path16Texture : path32Texture;
+                } else if (weight == 1.5f) { // Bridge
+                    tileColor = BEIGE;
+                    tileTexture = tileSize == 16 ? bridge16Texture : bridge32Texture;
+                } else if (weight == 2.0f) { // Grass
+                    tileColor = GREEN;
+                    tileTexture = tileSize == 16 ? grass16Texture : grass32Texture;
+                } else if (weight == 10.0f) { // River
+                    tileColor = BLUE;
+                    tileTexture = tileSize == 16 ? river16Texture : river32Texture;
+                } else if (weight >= 1001.0f) { // Tree
+                    tileColor = BROWN;
+                    tileTexture = tileSize == 16 ? tree16Texture : tree32Texture;
+                } else { // Default
+                    tileColor = GREEN;
+                    tileTexture = tileSize == 16 ? black16Texture : black32Texture;
+                }
 
-                DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, tileColor);
+                if (tileSize >= 16) {
+                    DrawTexture(tileTexture, x * tileSize + mapOffsetX, y * tileSize + mapOffsetY, WHITE);
 
-                float checks = (float)pathfinder->checks(pos);
-                if (checks > 0)
-                    DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, Fade(RED, checks / (checks + 5)));
+                    // Draw check count
+                    float checks = (float)pathfinder->checks(pos);
+                    if (checks > 0)
+                        DrawRectangle(x * tileSize + mapOffsetX, y * tileSize + mapOffsetY, tileSize, tileSize,
+                                      Fade(RED, checks / (checks + 5)));
+                } else {
+                    DrawRectangle(x * tileSize, y * tileSize, tileSize, tileSize, tileColor);
+                }
             }
         }
 
         // Draw spawn, goals, and destination
-        DrawRectangle(world->get_spawn().first * TILE_SIZE, world->get_spawn().second * TILE_SIZE, TILE_SIZE, TILE_SIZE,
-                      SPAWN_COLOR);
-        for (auto goal : world->get_goals()) {
-            DrawRectangle(goal.first * TILE_SIZE, goal.second * TILE_SIZE, TILE_SIZE, TILE_SIZE, GOAL_COLOR);
+        if (tileSize >= 16) {
+            DrawRectangle(world->get_spawn().first * tileSize + mapOffsetX,
+                          world->get_spawn().second * tileSize + mapOffsetY, tileSize, tileSize, RED);
+            for (auto goal : world->get_goals())
+                DrawTexture(tileSize == 16 ? coin16Texture : coin32Texture, goal.first * tileSize + mapOffsetX,
+                            goal.second * tileSize + mapOffsetY, WHITE);
+            DrawRectangle(world->get_destination().first * tileSize + mapOffsetX,
+                          world->get_destination().second * tileSize + mapOffsetY, tileSize, tileSize, PURPLE);
+        } else {
+            DrawRectangle(world->get_spawn().first * tileSize + mapOffsetX,
+                          world->get_spawn().second * tileSize + mapOffsetY, tileSize, tileSize, RED);
+            for (auto goal : world->get_goals())
+                DrawRectangle(goal.first * tileSize + mapOffsetX, goal.second * tileSize + mapOffsetY, tileSize,
+                              tileSize, GOLD);
+            DrawRectangle(world->get_destination().first * tileSize + mapOffsetX,
+                          world->get_destination().second * tileSize + mapOffsetY, tileSize, tileSize, PURPLE);
         }
-        DrawRectangle(world->get_destination().first * TILE_SIZE, world->get_destination().second * TILE_SIZE,
-                      TILE_SIZE, TILE_SIZE, DESTINATION_COLOR);
 
         // Draw optimal path
-        int loopbacks = 1;
-        auto path = pathfinder->get_current_path();
-        size_t path_i = path.size() - 1;
-        Position last_turn = Position(-1, -1);
-        int traveled = 0;
-        while (path_i >= 0) {
-            if (last_turn.first == -1)
-                last_turn = path[path_i];
+        if (tileSize >= 16) {
+            int loopbacks = 1;
+            auto path = pathfinder->get_current_path();
+            size_t path_i = path.size() - 1;
+            Position last_turn = Position(-1, -1);
+            int traveled = 0;
+            while (path_i >= 0) {
+                if (last_turn.first == -1)
+                    last_turn = path[path_i];
 
-            if ((path[path_i].first != last_turn.first && path[path_i].second != last_turn.second)) {
-                int side = loopbacks % 2 == 0 ? 1 : -1;
-                DrawLine(
-                    path[path_i + 1].first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    path[path_i + 1].second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    last_turn.first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    last_turn.second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    PATHFINDER_COLOR);
-                last_turn = path[path_i + 1];
-                traveled = 0;
+                if ((path[path_i].first != last_turn.first && path[path_i].second != last_turn.second)) {
+                    int side = loopbacks % 2 == 0 ? 1 : -1;
+                    DrawLine(path[path_i + 1].first * tileSize + tileSize / 2 +
+                                 ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetX,
+                             path[path_i + 1].second * tileSize + tileSize / 2 +
+                                 ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetY,
+                             last_turn.first * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) +
+                                 mapOffsetX,
+                             last_turn.second * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) +
+                                 mapOffsetY,
+                             PATHFINDER_COLOR);
+                    last_turn = path[path_i + 1];
+                    traveled = 0;
+                }
+
+                if (traveled > distance(last_turn, path[path_i])) {
+                    int side = loopbacks % 2 == 0 ? 1 : -1;
+                    DrawLine(path[path_i + 1].first * tileSize + tileSize / 2 +
+                                 ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetX,
+                             path[path_i + 1].second * tileSize + tileSize / 2 +
+                                 ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetY,
+                             last_turn.first * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) +
+                                 mapOffsetX,
+                             last_turn.second * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) +
+                                 mapOffsetY,
+                             PATHFINDER_COLOR);
+
+                    last_turn = path[path_i + 1];
+
+                    loopbacks++;
+                }
+
+                traveled = distance(last_turn, path[path_i]);
+
+                if (path_i == 0)
+                    break;
+
+                path_i--;
             }
-
-            if (traveled > distance(last_turn, path[path_i])) {
-                int side = loopbacks % 2 == 0 ? 1 : -1;
-                DrawLine(
-                    path[path_i + 1].first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    path[path_i + 1].second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    last_turn.first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    last_turn.second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                    PATHFINDER_COLOR);
-
-                last_turn = path[path_i + 1];
-
-                loopbacks++;
+            int side = loopbacks % 2 == 0 ? 1 : -1;
+            DrawLine(
+                path[path_i].first * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetX,
+                path[path_i].second * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetY,
+                last_turn.first * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetX,
+                last_turn.second * tileSize + tileSize / 2 + ((loopbacks / 2) * LINE_SEPERATION * side) + mapOffsetY,
+                PATHFINDER_COLOR);
+        } else {
+            for (auto pos : pathfinder->get_current_path()) {
+                DrawRectangle(pos.first * tileSize + mapOffsetX, pos.second * tileSize + mapOffsetY, tileSize, tileSize,
+                              PATHFINDER_COLOR);
             }
-
-            traveled = distance(last_turn, path[path_i]);
-
-            if (path_i == 0)
-                break;
-
-            path_i--;
         }
-        int side = loopbacks % 2 == 0 ? 1 : -1;
-        DrawLine(path[path_i].first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                 path[path_i].second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                 last_turn.first * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                 last_turn.second * TILE_SIZE + TILE_SIZE / 2 + ((loopbacks / 2) * LINE_SEPERATION * side),
-                 PATHFINDER_COLOR);
 
         size_t goal_path_i = 0;
         auto goal_path = pathfinder->get_current_goal_path();
@@ -222,16 +303,22 @@ int main() {
             if (pathfinder->completed())
                 color = GREEN;
 
-            DrawLine(goal_path[goal_path_i].first * TILE_SIZE + TILE_SIZE / 2,
-                     goal_path[goal_path_i].second * TILE_SIZE + TILE_SIZE / 2,
-                     goal_path[goal_path_i + 1].first * TILE_SIZE + TILE_SIZE / 2,
-                     goal_path[goal_path_i + 1].second * TILE_SIZE + TILE_SIZE / 2, color);
+            DrawLine(goal_path[goal_path_i].first * tileSize + tileSize / 2 + mapOffsetX,
+                     goal_path[goal_path_i].second * tileSize + tileSize / 2 + mapOffsetY,
+                     goal_path[goal_path_i + 1].first * tileSize + tileSize / 2 + mapOffsetX,
+                     goal_path[goal_path_i + 1].second * tileSize + tileSize / 2 + mapOffsetY, color);
 
             goal_path_i++;
         }
 
         DrawRectangleRec(dropdownRect, LIGHTGRAY);
         DrawText("Toggle Algorithm", (int)dropdownRect.x + 16, (int)dropdownRect.y + 4, 16, BLACK);
+
+        DrawRectangleRec(mapRect, LIGHTGRAY);
+        DrawText("Toggle Map", (int)mapRect.x + 16, (int)mapRect.y + 4, 16, BLACK);
+
+        DrawRectangleRec(speedRect, LIGHTGRAY);
+        DrawText("Toggle Speed", (int)speedRect.x + 16, (int)speedRect.y + 4, 16, BLACK);
 
         // Draw start button
         if (runningPathfinder) {
@@ -242,14 +329,24 @@ int main() {
             DrawText("Start", (int)startButton.x + 50, (int)startButton.y + 5, 20, WHITE);
         }
 
-        // Draw restart button
+        // Draw step button
+        if (runningPathfinder)
+            DrawRectangleRec(stepButton, GRAY);
+        else
+            DrawRectangleRec(stepButton, GREEN);
+        DrawText("Step", (int)stepButton.x + 50, (int)stepButton.y + 5, 20, WHITE);
+
+        // Draw reset button
         DrawRectangleRec(restartButton, RED);
-        DrawText("Restart", (int)restartButton.x + 35, (int)restartButton.y + 5, 20, WHITE);
+        DrawText("Reset", (int)restartButton.x + 35, (int)restartButton.y + 5, 20, WHITE);
 
         // Draw informational text
-        DrawText(TextFormat("Toggle to change Algorithm: %s", algorithms[selectedAlgorithm]), 10, 500, 20, WHITE);
-        DrawText("Click 'Start' to find the optimal path.", 10, 525, 20, WHITE);
-        DrawText("Click 'Restart' to clear the board!", 10, 550, 20, WHITE);
+        DrawText(TextFormat("Current Algorithm: %s", algorithms[selectedAlgorithm]), 10, 750, 20, WHITE);
+        DrawText(TextFormat("Current Map: %s", algorithms[selectedAlgorithm]), 10, 775, 20, WHITE);
+        DrawText(TextFormat("Current Speed: %s", speeds[selectedSpeed]), 10, 800, 20, WHITE);
+        DrawText("Click 'Start' to automatically find an optimal path.", 10, 825, 20, WHITE);
+        DrawText("Click 'Step' to manually step the pathfinder.", 10, 850, 20, WHITE);
+        DrawText("Click 'Reset' to clear the board!", 10, 875, 20, WHITE);
 
         EndDrawing();
 
