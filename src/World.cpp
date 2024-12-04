@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <utility>
 
@@ -8,9 +9,106 @@ int distance(Position a, Position b) {
     return abs(a.first - b.first) + abs(a.second - b.second);
 }
 
-World::World(std::pair<int, int> size, Position spawn, Position destination) : size(size) {
+World::World(std::pair<int, int> size, Position spawn, Position destination) {
+    this->size = size;
     this->spawn = spawn;
     this->destination = destination;
+}
+
+World::~World() {
+    if (locked)
+        std::cerr << "World is locked, baaaddddd **** may go down" << std::endl;
+}
+
+World::World(const char* filename) {
+    std::ifstream file(filename, std::ios::binary);
+
+    if (!file.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+
+        size = {1, 2};
+        spawn = {0, 0};
+        destination = {0, 1};
+
+        return;
+    }
+
+    int width, height;
+    file.read(reinterpret_cast<char*>(&width), sizeof(int));
+    file.read(reinterpret_cast<char*>(&height), sizeof(int));
+    size = {width, height};
+
+    int spawn_x, spawn_y;
+    file.read(reinterpret_cast<char*>(&spawn_x), sizeof(int));
+    file.read(reinterpret_cast<char*>(&spawn_y), sizeof(int));
+    spawn = {spawn_x, spawn_y};
+
+    int destination_x, destination_y;
+    file.read(reinterpret_cast<char*>(&destination_x), sizeof(int));
+    file.read(reinterpret_cast<char*>(&destination_y), sizeof(int));
+    destination = {destination_x, destination_y};
+
+    int goals_count;
+    file.read(reinterpret_cast<char*>(&goals_count), sizeof(int));
+    for (int i = 0; i < goals_count; i++) {
+        int goal_x, goal_y;
+        file.read(reinterpret_cast<char*>(&goal_x), sizeof(int));
+        file.read(reinterpret_cast<char*>(&goal_y), sizeof(int));
+        goals.push_back({goal_x, goal_y});
+    }
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            float weight;
+            file.read(reinterpret_cast<char*>(&weight), sizeof(float));
+            weighted_map[get_position_hashable({x, y})] = weight;
+        }
+    }
+
+    file.close();
+}
+
+void World::save_world(const char* filename) {
+    std::ofstream file(filename, std::ios::binary);
+
+    if (!file.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+
+        return;
+    }
+
+    int width = size.first;
+    int height = size.second;
+    file.write(reinterpret_cast<char*>(&width), sizeof(int));
+    file.write(reinterpret_cast<char*>(&height), sizeof(int));
+
+    int spawn_x = spawn.first;
+    int spawn_y = spawn.second;
+    file.write(reinterpret_cast<char*>(&spawn_x), sizeof(int));
+    file.write(reinterpret_cast<char*>(&spawn_y), sizeof(int));
+
+    int destination_x = destination.first;
+    int destination_y = destination.second;
+    file.write(reinterpret_cast<char*>(&destination_x), sizeof(int));
+    file.write(reinterpret_cast<char*>(&destination_y), sizeof(int));
+
+    int goals_count = goals.size();
+    file.write(reinterpret_cast<char*>(&goals_count), sizeof(int));
+    for (auto goal : goals) {
+        int goal_x = goal.first;
+        int goal_y = goal.second;
+        file.write(reinterpret_cast<char*>(&goal_x), sizeof(int));
+        file.write(reinterpret_cast<char*>(&goal_y), sizeof(int));
+    }
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            float weight = get_weight({x, y});
+            file.write(reinterpret_cast<char*>(&weight), sizeof(float));
+        }
+    }
+
+    file.close();
 }
 
 std::pair<int, int> World::get_size() {

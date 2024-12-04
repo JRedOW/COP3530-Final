@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-
 typedef std::pair<int, int> Position;
 typedef int PositionHashable;
 
@@ -13,7 +12,7 @@ int distance(Position a, Position b);
 class World {
   private:
     float default_weight = 1;
-    const std::pair<int, int> size;
+    std::pair<int, int> size;
 
     Position spawn;
     Position destination;
@@ -23,6 +22,11 @@ class World {
 
   public:
     World(std::pair<int, int> size, Position spawn, Position destination);
+
+    ~World();
+
+    World(const char* filename);
+    void save_world(const char* filename);
 
     /// @brief DO NOT MODIFY UNLESS YOU KNOW WHAT YOUR DOING
     bool locked = false;

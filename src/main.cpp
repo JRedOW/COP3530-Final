@@ -11,33 +11,6 @@ const int LINE_SEPERATION = 3;
 const Color PATHFINDER_COLOR = ORANGE;
 const Color PATHFINDER_MINI_COLOR = Fade(ORANGE, 0.5f);
 
-std::tuple<World*, PathFinder*> ResetWorld(World* world, PathFinder* pathfinder,
-                                           PathfinderHeuristicFn selectedAlgorithm) {
-    World* new_world = new World({30, 15}, {0, 0}, {19, 14}); // Create a new World object
-
-    // Reapply weights and goals
-    new_world->set_weight({10, 10}, 10);
-    new_world->set_weight({5, 5}, 2000);
-    new_world->set_weight({15, 10}, 1.5);
-    new_world->set_weight({14, 7}, 1.5);
-    new_world->set_weight({13, 6}, 10);
-    new_world->set_weight({12, 8}, 2.0);
-
-    new_world->add_goal({15, 4});
-    new_world->add_goal({1, 6});
-
-    // Reinitialize PathFinder
-    PathFinder* new_pathfinder = new PathFinder(new_world, selectedAlgorithm);
-
-    // Free old objects
-    if (pathfinder != nullptr)
-        delete pathfinder;
-    if (world != nullptr)
-        delete world;
-
-    return std::make_tuple(new_world, new_pathfinder);
-}
-
 int main() {
     // Initialize Raylib
     InitWindow(1600, 900, "The Legend of Alberta");
@@ -58,20 +31,12 @@ int main() {
     Texture2D coin32Texture = LoadTexture(ASSETS_PATH "tiles/32/coin.png");
     Texture2D black16Texture = LoadTexture(ASSETS_PATH "tiles/16/black.png");
     Texture2D black32Texture = LoadTexture(ASSETS_PATH "tiles/32/black.png");
-
-    // Create World and PathFinder objects
-    World* world = new World({30, 15}, {0, 0}, {19, 14});
-    world->set_weight({10, 10}, 10);  // Example: river
-    world->set_weight({5, 5}, 2000);  // Example: tree
-    world->set_weight({15, 10}, 1.5); // Bridge
-    world->set_weight({14, 7}, 1.5);
-    world->set_weight({13, 6}, 10);
-    world->set_weight({14, 4}, 2.0);
-
-    world->add_goal({15, 4}); // Add goals
-    world->add_goal({1, 6});
-
-    PathFinder* pathfinder = new PathFinder(world, AStar::Heuristic); // Default to A*
+    Texture2D flame16Texture = LoadTexture(ASSETS_PATH "tiles/16/flame.png");
+    Texture2D flame32Texture = LoadTexture(ASSETS_PATH "tiles/32/flame.png");
+    Texture2D sword16Texture = LoadTexture(ASSETS_PATH "tiles/16/sword.png");
+    Texture2D sword32Texture = LoadTexture(ASSETS_PATH "tiles/32/sword.png");
+    Texture2D zRock16Texture = LoadTexture(ASSETS_PATH "tiles/16/Z_rock.png");
+    Texture2D zRock32Texture = LoadTexture(ASSETS_PATH "tiles/32/Z_rock.png");
 
     // Dropdown and GUI state variables
     const char* algorithms[] = {"A*", "Dijkstra", "Dijkstra's Crow", "Dijkstra's Folly"};
@@ -79,8 +44,12 @@ int main() {
                                             DijkstraFolly::Heuristic};
     const int algorithmCount = sizeof(algorithms) / sizeof(*algorithms);
     int selectedAlgorithm = 0; // 0 = A*, 1 = Dijkstra, 2 = Dijkstra's Crow, 3 = Dijkstra's Folly
-    const char* speeds[] = {"Slow", "Fast", "Fastest", "Ludicrous"};
-    const int stallFrames[] = {5, 2, 1, 0};
+    const char* maps[] = {"It's Dangerous To Go Alone!"};
+    const char* mapFiles[] = {ASSETS_PATH "worlds/its_dangerous.dat"};
+    const int mapCount = sizeof(maps) / sizeof(*maps);
+    int selectedMap = 0;
+    const char* speeds[] = {"Slow", "Fast", "Faster", "Fastest", "Ludicrous"};
+    const int stallFrames[] = {8, 5, 3, 1, 0};
     const int speedCount = sizeof(speeds) / sizeof(*speeds);
     int selectedSpeed = 0;
 
@@ -94,6 +63,10 @@ int main() {
 
     bool runningPathfinder = false;
     int currentFrame = 0;
+
+    // Create World and PathFinder objects
+    World* world = new World(mapFiles[selectedMap]);
+    PathFinder* pathfinder = new PathFinder(world, algorithmFns[selectedAlgorithm]);
 
     while (!WindowShouldClose()) {
         // Run Pathfinder Step
@@ -121,6 +94,18 @@ int main() {
                 pathfinder = new PathFinder(world, algorithmFns[selectedAlgorithm]);
             }
 
+            if (CheckCollisionPointRec(mousePos, mapRect)) {
+                runningPathfinder = false;
+
+                selectedMap = ++selectedMap % mapCount; // Choose map
+                std::cout << selectedMap << std::endl;
+
+                delete pathfinder;
+                delete world;
+                world = new World(mapFiles[selectedMap]);
+                pathfinder = new PathFinder(world, algorithmFns[selectedAlgorithm]);
+            }
+
             if (CheckCollisionPointRec(mousePos, speedRect)) {
                 selectedSpeed = ++selectedSpeed % speedCount; // Choose speed
             }
@@ -143,7 +128,8 @@ int main() {
             if (CheckCollisionPointRec(mousePos, restartButton)) {
                 runningPathfinder = false;
 
-                std::tie(world, pathfinder) = ResetWorld(world, pathfinder, algorithmFns[selectedAlgorithm]);
+                delete pathfinder;
+                pathfinder = new PathFinder(world, algorithmFns[selectedAlgorithm]);
             }
         }
 
@@ -182,6 +168,9 @@ int main() {
                 if (weight == 1.0f) { // Path
                     tileColor = DARKGRAY;
                     tileTexture = tileSize == 16 ? path16Texture : path32Texture;
+                } else if (weight == 1.0078125f) { // Zelda Black
+                    tileColor = BLACK;
+                    tileTexture = tileSize == 16 ? black16Texture : black32Texture;
                 } else if (weight == 1.5f) { // Bridge
                     tileColor = BEIGE;
                     tileTexture = tileSize == 16 ? bridge16Texture : bridge32Texture;
@@ -191,9 +180,18 @@ int main() {
                 } else if (weight == 10.0f) { // River
                     tileColor = BLUE;
                     tileTexture = tileSize == 16 ? river16Texture : river32Texture;
-                } else if (weight >= 1001.0f) { // Tree
+                } else if (weight == 1001.0f) { // Tree
                     tileColor = BROWN;
                     tileTexture = tileSize == 16 ? tree16Texture : tree32Texture;
+                } else if (weight == 1200.0f) { // Zelda Rock
+                    tileColor = BLACK;
+                    tileTexture = tileSize == 16 ? zRock16Texture : zRock32Texture;
+                } else if (weight == 1532.0f) { // Zelda Flame
+                    tileColor = BLACK;
+                    tileTexture = tileSize == 16 ? flame16Texture : flame32Texture;
+                } else if (weight == 2556.0f) { // Zelda Sword
+                    tileColor = BLACK;
+                    tileTexture = tileSize == 16 ? sword16Texture : sword32Texture;
                 } else { // Default
                     tileColor = GREEN;
                     tileTexture = tileSize == 16 ? black16Texture : black32Texture;
@@ -342,7 +340,7 @@ int main() {
 
         // Draw informational text
         DrawText(TextFormat("Current Algorithm: %s", algorithms[selectedAlgorithm]), 10, 750, 20, WHITE);
-        DrawText(TextFormat("Current Map: %s", algorithms[selectedAlgorithm]), 10, 775, 20, WHITE);
+        DrawText(TextFormat("Current Map: %s", maps[selectedMap]), 10, 775, 20, WHITE);
         DrawText(TextFormat("Current Speed: %s", speeds[selectedSpeed]), 10, 800, 20, WHITE);
         DrawText("Click 'Start' to automatically find an optimal path.", 10, 825, 20, WHITE);
         DrawText("Click 'Step' to manually step the pathfinder.", 10, 850, 20, WHITE);
