@@ -49,7 +49,7 @@ int main() {
     const int mapCount = sizeof(maps) / sizeof(*maps);
     int selectedMap = 0;
     const char* speeds[] = {"Slow", "Fast", "Faster", "Fastest", "Ludicrous"};
-    const int stallFrames[] = {8, 5, 3, 1, 0};
+    const int stallFrames[] = {6, 3, 1, 0, 0};
     const int speedCount = sizeof(speeds) / sizeof(*speeds);
     int selectedSpeed = 0;
 
@@ -74,6 +74,14 @@ int main() {
             if (!pathfinder->completed() && !pathfinder->failed()) {
                 if (currentFrame % (stallFrames[selectedSpeed] + 1) == 0) {
                     pathfinder->Step();
+
+                    if (selectedSpeed == 4) {
+                        for (int i = 0; i < 9; i++) {
+                            if (!pathfinder->completed() && !pathfinder->failed()) {
+                                pathfinder->Step();
+                            }
+                        }
+                    }
                 }
             } else {
                 runningPathfinder = false;
