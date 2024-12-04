@@ -6,6 +6,8 @@
 
 #include "World.h"
 
+typedef std::function<float(World* world, std::deque<Position>, std::vector<Position>)> PathfinderHeuristicFn;
+
 /// @brief Only have one pathfinder per world, a check is performed with a warning.
 class PathFinder {
   protected:
@@ -13,8 +15,7 @@ class PathFinder {
 
     void Setup();
 
-    typedef std::function<float(World* world, std::deque<Position>, std::vector<Position>)> HeuristicFnDef;
-    HeuristicFnDef Heuristic;
+    PathfinderHeuristicFn Heuristic;
 
     Position current_position;
     float current_cost;
@@ -33,13 +34,14 @@ class PathFinder {
     std::vector<std::vector<Position>> goal_paths;
 
   public:
-    PathFinder(World* world, HeuristicFnDef heuristic_fn);
+    PathFinder(World* world, PathfinderHeuristicFn heuristic_fn);
     ~PathFinder();
 
     /// @brief READ ONLY
     World* get_world();
 
     Position get_current_position();
+    int get_goal_progress();
     float get_current_cost();
     float get_current_heuristic();
     /// @return The current path with the shortest distance found, IN REVERSE ORDER
@@ -52,9 +54,6 @@ class PathFinder {
     int checks(Position pos);
 
     void Step();
-
-  void Reset(World* newWorld, HeuristicFnDef heuristicFn);
-
 };
 
 namespace Dijkstra {
@@ -65,6 +64,10 @@ namespace AStar {
 float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
 }
 
+namespace DijkstraCrow {
+float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
+}
 
-
-
+namespace DijkstraFolly {
+float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
+}

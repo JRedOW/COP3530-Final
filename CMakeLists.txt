@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 # Project name and language
-project(the_legend_of_alberta)
+project(the_legend_of_alberta CXX)
 set(CMAKE_CXX_STANDARD 14)
 
 # Set build type to Debug by default
@@ -11,10 +11,20 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Include Raylib headers
-include_directories(/opt/homebrew/Cellar/raylib/5.5/include)
+# Adding Raylib
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
+set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
 
-# Link Raylib library directory
-link_directories(/opt/homebrew/lib)
+FetchContent_Declare(
+    raylib
+    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
+    GIT_TAG c1ab645ca298a2801097931d1079b10ff7eb9df8 # tag 5.5
+    GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(raylib)
 
 ## Add source files (automatically finds all .cpp files in src/)
 file(GLOB_RECURSE the_legend_of_alberta_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.*")
@@ -26,7 +36,7 @@ file(GLOB_RECURSE the_legend_of_alberta_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRE
 add_executable(${PROJECT_NAME} ${the_legend_of_alberta_SOURCES})
 
 # Link Raylib and additional libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib m pthread dl)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
 
 # Set the assets path macro
 target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/")

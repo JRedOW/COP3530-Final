@@ -22,7 +22,7 @@ Position World::get_spawn() {
 
 void World::set_spawn(Position spawn) {
     if (locked) {
-        std::cout << "World is locked, can not set spawn" << std::endl;
+        std::cerr << "World is locked, can not set spawn" << std::endl;
 
         return;
     }
@@ -36,7 +36,7 @@ Position World::get_destination() {
 
 void World::set_destination(Position destination) {
     if (locked) {
-        std::cout << "World is locked, can not set destination" << std::endl;
+        std::cerr << "World is locked, can not set destination" << std::endl;
 
         return;
     }
@@ -50,7 +50,7 @@ std::vector<Position> World::get_goals() {
 
 void World::add_goal(Position goal) {
     if (locked) {
-        std::cout << "World is locked, can not add goal" << std::endl;
+        std::cerr << "World is locked, can not add goal" << std::endl;
 
         return;
     }
@@ -60,7 +60,7 @@ void World::add_goal(Position goal) {
 
 void World::remove_goal(Position goal) {
     if (locked) {
-        std::cout << "World is locked, can not remove goal" << std::endl;
+        std::cerr << "World is locked, can not remove goal" << std::endl;
 
         return;
     }
@@ -70,7 +70,7 @@ void World::remove_goal(Position goal) {
 
 void World::set_default_weight(float weight) {
     if (locked) {
-        std::cout << "World is locked, can not set default weight" << std::endl;
+        std::cerr << "World is locked, can not set default weight" << std::endl;
 
         return;
     }
@@ -80,7 +80,7 @@ void World::set_default_weight(float weight) {
 
 void World::set_weight(Position pos, float weight) {
     if (locked) {
-        std::cout << "World is locked, can not set weight" << std::endl;
+        std::cerr << "World is locked, can not set weight" << std::endl;
 
         return;
     }
@@ -89,8 +89,10 @@ void World::set_weight(Position pos, float weight) {
 }
 
 float World::get_weight(Position pos) {
-    if (weighted_map.find(get_position_hashable(pos)) != weighted_map.end()) {
-        return weighted_map[get_position_hashable(pos)];
+    PositionHashable pos_hash = get_position_hashable(pos);
+
+    if (weighted_map.find(pos_hash) != weighted_map.end()) {
+        return weighted_map[pos_hash];
     }
 
     return default_weight;
@@ -103,4 +105,3 @@ PositionHashable World::get_position_hashable(Position pos) {
 Position World::get_position(PositionHashable hash) {
     return {hash / size.second, hash % size.second};
 }
-
