@@ -6,7 +6,7 @@
 
 #include "World.h"
 
-typedef std::function<float(World* world, std::deque<Position>, std::vector<Position>)> PathfinderHeuristicFn;
+typedef std::function<float(World* world, std::deque<Position>, std::vector<Position>, int)> PathfinderHeuristicFn;
 
 /// @brief Only have one pathfinder per world, a check is performed with a warning.
 class PathFinder {
@@ -57,17 +57,17 @@ class PathFinder {
 };
 
 namespace Dijkstra {
-float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
+float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path, int goal_progress);
 }
 
 namespace AStar {
-float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
+float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path, int goal_progress);
 }
 
 namespace DijkstraCrow {
-float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
+float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path, int goal_progress);
 }
 
 namespace DijkstraFolly {
-float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path);
+float Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path, int goal_progress);
 }

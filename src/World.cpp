@@ -225,7 +225,7 @@ World* BIG_OL_WORLD() {
 
     for (int x = 0; x < size.first; x++) {
         for (int y = 0; y < size.second; y++) {
-            char c = data[y][x];
+            char c = data[x][y];
             if (c == '0') {
                 world->set_weight({x, y}, 1.0f);
             } else {

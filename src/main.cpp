@@ -121,6 +121,12 @@ int main() {
                 // Step pathfinder
                 if (!runningPathfinder) {
                     pathfinder->Step();
+                } else {
+                    runningPathfinder = false;
+
+                    while (!pathfinder->completed() && !pathfinder->failed()) {
+                        pathfinder->Step();
+                    }
                 }
             }
 
@@ -331,11 +337,13 @@ int main() {
         }
 
         // Draw step button
-        if (runningPathfinder)
-            DrawRectangleRec(stepButton, GRAY);
-        else
+        if (runningPathfinder) {
+            DrawRectangleRec(stepButton, ORANGE);
+            DrawText("Skip", (int)stepButton.x + 50, (int)stepButton.y + 5, 20, WHITE);
+        } else {
             DrawRectangleRec(stepButton, GREEN);
-        DrawText("Step", (int)stepButton.x + 50, (int)stepButton.y + 5, 20, WHITE);
+            DrawText("Step", (int)stepButton.x + 50, (int)stepButton.y + 5, 20, WHITE);
+        }
 
         // Draw reset button
         DrawRectangleRec(restartButton, RED);

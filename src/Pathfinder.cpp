@@ -80,7 +80,7 @@ void PathFinder::Setup() {
         lowest_cost[i][world->get_position_hashable(current_position)] = 0;
 
         current_cost = 0;
-        current_heuristic = Heuristic(world, get_current_path(), goal_paths[i]);
+        current_heuristic = Heuristic(world, get_current_path(), goal_paths[i], goal_progress[i]);
 
         open_set.push({current_heuristic, i, current_position});
     }
@@ -129,8 +129,12 @@ bool PathFinder::completed() {
     if (current_position != world->get_destination())
         return false;
 
-    auto path = get_current_path();
+    if (goal_progress[current_goal_path] >= goal_paths[current_goal_path].size())
+        return true;
 
+    return false;
+    // Safety check for overshoot if goal_progress wrong, but slows it a TON
+    /**
     size_t i = 0;
     for (auto pos = path.rbegin(); pos != path.rend(); pos++) {
         if (i < goal_paths[current_goal_path].size() && *pos == goal_paths[current_goal_path][i])
@@ -140,7 +144,7 @@ bool PathFinder::completed() {
     if (i < goal_paths[current_goal_path].size())
         return false;
 
-    return true;
+    return true;*/
 }
 
 bool PathFinder::failed() {
@@ -158,8 +162,11 @@ void PathFinder::Step() {
 
     current_position = position;
     current_goal_path = goal_path;
+
+    auto current_path = get_current_path();
+
     current_cost = lowest_cost[goal_path][world->get_position_hashable(current_position)];
-    current_heuristic = Heuristic(world, get_current_path(), goal_paths[goal_path]);
+    current_heuristic = Heuristic(world, current_path, goal_paths[goal_path], goal_progress[goal_path]);
     checked_count[world->get_position_hashable(current_position)]++;
 
     if (completed() || failed())
@@ -168,8 +175,6 @@ void PathFinder::Step() {
     open_set.pop();
 
     if (current_position == goal_paths[goal_path][goal_progress[goal_path]]) {
-        auto current_path = get_current_path();
-
         std::priority_queue<HeapTuple, std::vector<HeapTuple>, std::greater<HeapTuple>> new_open_set = {};
         while (!open_set.empty()) {
             if (std::get<1>(open_set.top()) != goal_path)
@@ -205,10 +210,9 @@ void PathFinder::Step() {
         if (world->get_weight(neighbor) >= 1000)
             continue;
 
-        auto new_path = get_current_path();
-        new_path.insert(new_path.begin(), neighbor);
+        current_path.push_front(neighbor);
         float new_weight = current_cost + world->get_weight(neighbor);
-        float new_heuristic = Heuristic(world, new_path, goal_paths[goal_path]);
+        float new_heuristic = Heuristic(world, current_path, goal_paths[goal_path], goal_progress[goal_path]);
 
         // This finds the optimal path WITH NO REPETITION, will need to work some more (or maybe add switch) the
         // find the optimal path with "loops" and a check to stop overflows
@@ -219,76 +223,84 @@ void PathFinder::Step() {
 
             open_set.push({new_weight + new_heuristic, goal_path, neighbor});
         }
+
+        current_path.pop_front();
     }
 }
 
-float Dijkstra::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path) {
+float Dijkstra::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path,
+                          int goal_progress) {
     return 0.0f;
 }
 
-float AStar::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path) {
-    size_t i = 0;
-    for (auto pos = incomplete_path.rbegin(); pos != incomplete_path.rend(); pos++) {
-        if (i < goal_path.size() && goal_path[i] == *pos)
-            i++;
-    }
-
+float AStar::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path,
+                       int goal_progress) {
     Position current_position = incomplete_path.front();
 
-    if (i == goal_path.size())
+    if (goal_progress >= goal_path.size())
+        return 0;
+
+    if (current_position == goal_path[goal_progress])
+        goal_progress++;
+
+    if (goal_progress >= goal_path.size())
         return 0;
 
     float distance_needed = 0;
 
-    while (i < goal_path.size()) {
-        distance_needed += distance(current_position, goal_path[i]);
-        current_position = goal_path[i];
+    while (goal_progress < goal_path.size()) {
+        distance_needed += distance(current_position, goal_path[goal_progress]);
+        current_position = goal_path[goal_progress];
 
-        i++;
+        goal_progress++;
     }
 
     return distance_needed;
 }
 
-float DijkstraCrow::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path) {
-    size_t i = 0;
-    for (auto pos = incomplete_path.rbegin(); pos != incomplete_path.rend(); pos++) {
-        if (i < goal_path.size() && goal_path[i] == *pos)
-            i++;
-    }
+float DijkstraCrow::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path,
+                              int goal_progress) {
+    Position current_position = incomplete_path.front();
 
-    if (i == goal_path.size())
+    if (goal_progress >= goal_path.size())
         return 0;
 
-    Position current_position = goal_path[i];
-    i++;
+    if (current_position == goal_path[goal_progress])
+        goal_progress++;
+
+    if (goal_progress >= goal_path.size())
+        return 0;
+
+    current_position = goal_path[goal_progress];
+    goal_progress++;
 
     float distance_needed = 0;
 
-    while (i < goal_path.size()) {
-        distance_needed += distance(current_position, goal_path[i]);
-        current_position = goal_path[i];
+    while (goal_progress < goal_path.size()) {
+        distance_needed += distance(current_position, goal_path[goal_progress]);
+        current_position = goal_path[goal_progress];
 
-        i++;
+        goal_progress++;
     }
 
     return distance_needed;
 }
 
-float DijkstraFolly::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path) {
-    size_t i = 0;
-    for (auto pos = incomplete_path.rbegin(); pos != incomplete_path.rend(); pos++) {
-        if (i < goal_path.size() && goal_path[i] == *pos)
-            i++;
-    }
-
+float DijkstraFolly::Heuristic(World* world, std::deque<Position> incomplete_path, std::vector<Position> goal_path,
+                               int goal_progress) {
     Position current_position = incomplete_path.front();
 
-    if (i == goal_path.size())
+    if (goal_progress >= goal_path.size())
         return 0;
 
-    if (i > 0 && incomplete_path.front() == goal_path[i - 1])
+    if (current_position == goal_path[goal_progress])
+        goal_progress++;
+
+    if (goal_progress >= goal_path.size())
         return 0;
 
-    return (float)distance(current_position, goal_path[i]);
+    if (goal_progress > 0 && incomplete_path.front() == goal_path[goal_progress - 1])
+        return 0;
+
+    return (float)distance(current_position, goal_path[goal_progress]);
 }
