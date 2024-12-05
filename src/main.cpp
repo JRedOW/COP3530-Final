@@ -48,9 +48,9 @@ int main() {
                                             DijkstraFolly::Heuristic};
     const int algorithmCount = sizeof(algorithms) / sizeof(*algorithms);
     int selectedAlgorithm = 0; // 0 = A*, 1 = Dijkstra, 2 = Dijkstra's Crow, 3 = Dijkstra's Folly
-    const char* maps[] = {"Florida", "Big Boy", "It's Dangerous To Go Alone!"};
-    const char* mapFiles[] = {ASSETS_PATH "worlds/florida.dat", ASSETS_PATH "worlds/big_ol_world.dat",
-                              ASSETS_PATH "worlds/its_dangerous.dat"};
+    const char* maps[] = {"Paths", "Florida", "Big Boy", "It's Dangerous To Go Alone!"};
+    const char* mapFiles[] = {ASSETS_PATH "worlds/paths.dat", ASSETS_PATH "worlds/florida.dat",
+                              ASSETS_PATH "worlds/big_ol_world.dat", ASSETS_PATH "worlds/its_dangerous.dat"};
     const int mapCount = sizeof(maps) / sizeof(*maps);
     int selectedMap = 0;
     const char* speeds[] = {"Slow", "Fast", "Faster", "Fastest", "Ludicrous"};
