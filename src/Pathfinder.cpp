@@ -126,7 +126,8 @@ std::vector<Position> PathFinder::get_current_goal_path() {
 }
 
 bool PathFinder::completed() {
-    if (current_position == world->get_destination())
+    if (current_position == world->get_destination() &&
+        goal_progress[current_goal_path] + 1 == goal_paths[current_goal_path].size())
         return true;
 
     if (goal_progress[current_goal_path] >= goal_paths[current_goal_path].size())
