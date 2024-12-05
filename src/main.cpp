@@ -41,6 +41,8 @@ int main() {
     Texture2D gem32Texture = LoadTexture(ASSETS_PATH "tiles/32/gem.png");
     Texture2D oldMan16Texture = LoadTexture(ASSETS_PATH "tiles/16/oldman.png");
     Texture2D oldMan32Texture = LoadTexture(ASSETS_PATH "tiles/32/oldman.png");
+    Texture2D alberta16Texture = LoadTexture(ASSETS_PATH "tiles/16/alberta.png");
+    Texture2D alberta32Texture = LoadTexture(ASSETS_PATH "tiles/32/alberta.png");
 
     // Dropdown and GUI state variables
     const char* algorithms[] = {"A*", "Dijkstra", "Dijkstra's Crow", "Dijkstra's Folly"};
@@ -48,9 +50,10 @@ int main() {
                                             DijkstraFolly::Heuristic};
     const int algorithmCount = sizeof(algorithms) / sizeof(*algorithms);
     int selectedAlgorithm = 0; // 0 = A*, 1 = Dijkstra, 2 = Dijkstra's Crow, 3 = Dijkstra's Folly
-    const char* maps[] = {"Paths", "Florida", "Big Boy", "It's Dangerous To Go Alone!"};
-    const char* mapFiles[] = {ASSETS_PATH "worlds/paths.dat", ASSETS_PATH "worlds/florida.dat",
-                              ASSETS_PATH "worlds/big_ol_world.dat", ASSETS_PATH "worlds/its_dangerous.dat"};
+    const char* maps[] = {"Bridge", "Paths", "Florida", "Big Boy", "It's Dangerous To Go Alone!"};
+    const char* mapFiles[] = {ASSETS_PATH "worlds/bridge.dat", ASSETS_PATH "worlds/paths.dat",
+                              ASSETS_PATH "worlds/florida.dat", ASSETS_PATH "worlds/big_ol_world.dat",
+                              ASSETS_PATH "worlds/its_dangerous.dat"};
     const int mapCount = sizeof(maps) / sizeof(*maps);
     int selectedMap = 0;
     const char* speeds[] = {"Slow", "Fast", "Faster", "Fastest", "Ludicrous"};
@@ -235,14 +238,14 @@ int main() {
 
         // Draw spawn, goals, and destination
         if (tileSize >= 16) {
-            Texture2D spawnTexture = tileSize == 16 ? coin16Texture : coin32Texture;
+            Texture2D spawnTexture = tileSize == 16 ? alberta16Texture : alberta32Texture;
             Texture2D goalTexture = tileSize == 16 ? coin16Texture : coin32Texture;
-            Texture2D destinationTexture = selectedMap == 0 ? tileSize == 16 ? oldMan16Texture : oldMan32Texture
+            Texture2D destinationTexture = selectedMap == 4 ? tileSize == 16 ? oldMan16Texture : oldMan32Texture
                                            : tileSize == 16 ? gem16Texture
                                                             : gem32Texture;
 
-            DrawRectangle(world->get_spawn().first * tileSize + mapOffsetX,
-                          world->get_spawn().second * tileSize + mapOffsetY, tileSize, tileSize, RED);
+            DrawTexture(spawnTexture, world->get_spawn().first * tileSize + mapOffsetX,
+                        world->get_spawn().second * tileSize + mapOffsetY, WHITE);
             for (auto goal : world->get_goals())
                 DrawTexture(goalTexture, goal.first * tileSize + mapOffsetX, goal.second * tileSize + mapOffsetY,
                             WHITE);
