@@ -37,6 +37,10 @@ int main() {
     Texture2D sword32Texture = LoadTexture(ASSETS_PATH "tiles/32/sword.png");
     Texture2D zRock16Texture = LoadTexture(ASSETS_PATH "tiles/16/Z_rock.png");
     Texture2D zRock32Texture = LoadTexture(ASSETS_PATH "tiles/32/Z_rock.png");
+    Texture2D gem16Texture = LoadTexture(ASSETS_PATH "tiles/16/gem.png");
+    Texture2D gem32Texture = LoadTexture(ASSETS_PATH "tiles/32/gem.png");
+    Texture2D oldMan16Texture = LoadTexture(ASSETS_PATH "tiles/16/oldman.png");
+    Texture2D oldMan32Texture = LoadTexture(ASSETS_PATH "tiles/32/oldman.png");
 
     // Dropdown and GUI state variables
     const char* algorithms[] = {"A*", "Dijkstra", "Dijkstra's Crow", "Dijkstra's Folly"};
@@ -230,13 +234,19 @@ int main() {
 
         // Draw spawn, goals, and destination
         if (tileSize >= 16) {
+            Texture2D spawnTexture = tileSize == 16 ? coin16Texture : coin32Texture;
+            Texture2D goalTexture = tileSize == 16 ? coin16Texture : coin32Texture;
+            Texture2D destinationTexture = selectedMap == 0 ? tileSize == 16 ? oldMan16Texture : oldMan32Texture
+                                           : tileSize == 16 ? gem16Texture
+                                                            : gem32Texture;
+
             DrawRectangle(world->get_spawn().first * tileSize + mapOffsetX,
                           world->get_spawn().second * tileSize + mapOffsetY, tileSize, tileSize, RED);
             for (auto goal : world->get_goals())
-                DrawTexture(tileSize == 16 ? coin16Texture : coin32Texture, goal.first * tileSize + mapOffsetX,
-                            goal.second * tileSize + mapOffsetY, WHITE);
-            DrawRectangle(world->get_destination().first * tileSize + mapOffsetX,
-                          world->get_destination().second * tileSize + mapOffsetY, tileSize, tileSize, PURPLE);
+                DrawTexture(goalTexture, goal.first * tileSize + mapOffsetX, goal.second * tileSize + mapOffsetY,
+                            WHITE);
+            DrawTexture(destinationTexture, world->get_destination().first * tileSize + mapOffsetX,
+                        world->get_destination().second * tileSize + mapOffsetY, WHITE);
         } else {
             DrawRectangle(world->get_spawn().first * tileSize + mapOffsetX,
                           world->get_spawn().second * tileSize + mapOffsetY, tileSize, tileSize, RED);
@@ -327,35 +337,55 @@ int main() {
         }
 
         DrawRectangleRec(dropdownRect, LIGHTGRAY);
-        DrawText("Toggle Algorithm", (int)dropdownRect.x + 16, (int)dropdownRect.y + 4, 16, BLACK);
+        char* dropdownText = "Toggle Algorithm";
+        const Vector2 dropdown_text_size = MeasureTextEx(GetFontDefault(), dropdownText, 16, 1);
+        DrawText(dropdownText, dropdownRect.x + dropdownRect.width / 2 - dropdown_text_size.x / 2,
+                 dropdownRect.y + dropdownRect.height / 2 - dropdown_text_size.y / 2, 16, BLACK);
 
         DrawRectangleRec(mapRect, LIGHTGRAY);
-        DrawText("Toggle Map", (int)mapRect.x + 16, (int)mapRect.y + 4, 16, BLACK);
+        char* mapText = "Toggle Map";
+        const Vector2 map_text_size = MeasureTextEx(GetFontDefault(), mapText, 16, 1);
+        DrawText(mapText, mapRect.x + mapRect.width / 2 - map_text_size.x / 2,
+                 mapRect.y + mapRect.height / 2 - map_text_size.y / 2, 16, BLACK);
 
         DrawRectangleRec(speedRect, LIGHTGRAY);
-        DrawText("Toggle Speed", (int)speedRect.x + 16, (int)speedRect.y + 4, 16, BLACK);
+        char* speedText = "Toggle Speed";
+        const Vector2 speed_text_size = MeasureTextEx(GetFontDefault(), speedText, 16, 1);
+        DrawText(speedText, speedRect.x + speedRect.width / 2 - speed_text_size.x / 2,
+                 speedRect.y + speedRect.height / 2 - speed_text_size.y / 2, 16, BLACK);
 
+        char* startText;
         // Draw start button
         if (runningPathfinder) {
+            startText = "Stop";
             DrawRectangleRec(startButton, RED);
-            DrawText("Stop", (int)startButton.x + 50, (int)startButton.y + 5, 20, WHITE);
         } else {
+            startText = "Start";
             DrawRectangleRec(startButton, GREEN);
-            DrawText("Start", (int)startButton.x + 50, (int)startButton.y + 5, 20, WHITE);
         }
+        const Vector2 start_text_size = MeasureTextEx(GetFontDefault(), startText, 20, 1);
+        DrawText(startText, startButton.x + startButton.width / 2 - start_text_size.x / 2,
+                 startButton.y + startButton.height / 2 - start_text_size.y / 2, 20, WHITE);
 
+        char* stepText;
         // Draw step button
         if (runningPathfinder) {
+            stepText = "Skip";
             DrawRectangleRec(stepButton, ORANGE);
-            DrawText("Skip", (int)stepButton.x + 50, (int)stepButton.y + 5, 20, WHITE);
         } else {
+            stepText = "Step";
             DrawRectangleRec(stepButton, GREEN);
-            DrawText("Step", (int)stepButton.x + 50, (int)stepButton.y + 5, 20, WHITE);
         }
+        const Vector2 step_text_size = MeasureTextEx(GetFontDefault(), stepText, 20, 1);
+        DrawText(stepText, stepButton.x + stepButton.width / 2 - step_text_size.x / 2,
+                 stepButton.y + stepButton.height / 2 - step_text_size.y / 2, 20, WHITE);
 
         // Draw reset button
+        char* resetText = "Reset";
         DrawRectangleRec(restartButton, RED);
-        DrawText("Reset", (int)restartButton.x + 35, (int)restartButton.y + 5, 20, WHITE);
+        const Vector2 reset_text_size = MeasureTextEx(GetFontDefault(), resetText, 20, 1);
+        DrawText(resetText, restartButton.x + restartButton.width / 2 - reset_text_size.x / 2,
+                 restartButton.y + restartButton.height / 2 - reset_text_size.y / 2, 20, WHITE);
 
         // Draw informational text
         DrawText(TextFormat("Current Algorithm: %s", algorithms[selectedAlgorithm]), 10, 750, 20, WHITE);
